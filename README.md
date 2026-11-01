@@ -3,6 +3,8 @@
 KORMARC(통합서지용·전거통제용)·MARC21 레코드를 **입력·검증**하고, 서지정보를 보고 레코드를 작성하는 **연습**을 할 수 있는 단일 HTML 웹앱입니다. 설치가 필요 없고 오프라인에서 동작합니다.
 
 ## 실행
+- 웹에서 바로 실행: https://lunaticruri.github.io/marc-studio/ (GitHub Pages, 데이터는 브라우저에 저장됨)
+- 단일 파일: https://lunaticruri.github.io/marc-studio/dist/MARC-Studio.html 을 저장해 두면 오프라인에서도 사용 가능
 - `dist/MARC-Studio.html` 파일을 브라우저(Chrome, Safari, Edge 등)로 열면 됩니다. 이 파일 하나만 있으면 됩니다.
 - 데이터(레코드, 연습 진행 상태, 설정)는 브라우저의 localStorage에 자동 저장됩니다. 다른 컴퓨터로 옮기려면 「설정 → 전체 백업(JSON)」을 사용하세요.
 

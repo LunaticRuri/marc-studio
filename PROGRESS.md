@@ -76,7 +76,7 @@
 - 교과서(노션 "[자료조직_목록 05-3] KORMARC 전거통제용") 참고: 2021 제3문(2) 유형 = b01(에밀 아자르).
 
 ## 저장소
-- GitHub: https://github.com/LunaticRuri/marc-studio (public, main). 수정 후 `git add -A && git commit && git push`. 인증은 gh CLI(키체인).
+- GitHub: https://github.com/LunaticRuri/marc-studio (public, main). GitHub Pages: https://lunaticruri.github.io/marc-studio/ (main 루트, 푸시하면 1~2분 내 반영). 수정 후 `git add -A && git commit && git push`. 인증은 gh CLI(키체인).
 
 ## 작업 로그
 - 2026-10-31: 명세 확인, 골격 생성. KORMARC 원문 확인(2023 개정판). 데이터·엔진·UI 전부 작성, 자체테스트 10건 통과, 브라우저 동작 확인. 1차 완성(dist/MARC-Studio.html 238KB).
