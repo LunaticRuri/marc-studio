@@ -6,7 +6,7 @@ TMP=$(mktemp /tmp/ms_check_XXXX.js)
 {
   printf '%s\n' 'var window = this; var console = { log: function(){}, warn: function(){}, error: function(){} };'
   printf '%s\n' 'var localStorage = { _d:{}, getItem:function(k){return this._d[k]||null;}, setItem:function(k,v){this._d[k]=String(v);}, removeItem:function(k){delete this._d[k];} };'
-  for f in src/data/codes.js src/data/marc21.js src/data/kormarc.js src/data/kormarc-fields2.js src/data/kormarc-auth.js src/data/exercises.js src/data/exercises-auth.js src/core/model.js src/core/validate.js src/core/grade.js src/core/describe.js; do
+  for f in src/data/codes.js src/data/marc21.js src/data/kormarc.js src/data/kormarc-fields2.js src/data/kormarc-auth.js src/data/exercises.js src/data/exercises-auth.js src/data/usage.js src/core/model.js src/core/validate.js src/core/grade.js src/core/describe.js; do
     [ -f "$f" ] && printf '/* ==== %s ==== */\n' "$f" && cat "$f"
   done
   printf '%s\n' 'var out = [];'

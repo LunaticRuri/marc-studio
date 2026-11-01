@@ -97,9 +97,17 @@
 
 권장 경로: ① 국회도서관(인증키 1개로 목록 → 건별 MARCXML, 가장 간단) ② 국립중앙도서관(인증키 승인 후 목록 → ISO 2709 일괄). 둘 다 "건별 조회"라 표본은 수천 건 규모로 설계(자료유형·발행년 층화), 호출 간격을 두고 수집. 이용 조건은 공공누리 1유형(국회) / 국립중앙도서관 Open API 약관 확인.
 
+## 실무 사용률 분석 파이프라인 (2026-11-01)
+- `tools/nanet_collect.py`: 공공데이터포털 국회도서관 자료검색 API(상세검색, dbname·발행년도·검색어)로 제어번호를 모으고, 상세화면 `dowloadMARC.do`로 건별 MARCXML을 `.cache/nanet/records/`에 저장(간격 기본 1초, 이어받기 가능). 인증키는 `--key` 또는 환경변수 `DATA_GO_KR_KEY`. `--ids 파일`이면 API 생략.
+- `tools/marc_stats.py`: MARCXML/ISO 2709 → `src/data/usage.js` (`MS.USAGE[source]`: 태그별 recs/occ, 지시기호 조합 분포, 식별기호 사용률, 리더·008 자리별 분포). `--books-only`로 도서만 집계 가능. 여러 source(nanet, nlk…)를 같은 파일에 누적.
+- 앱: 태그 사전 목록에 출현률 % 표시, 「실무 사용률 순」 정렬, 각 태그·리더·008 상세에 사용률 블록, 오른쪽에 표본 설명 패널. 형식이 같은 USAGE만 표시(현재 KORMARC).
+- 현재 usage.js는 **시험용 12건**(동작 확인용). 본 수집 예: `python3 tools/nanet_collect.py --key "$DATA_GO_KR_KEY" --db 일반도서 --years 2015-2024 --pages 1 --target 1500` → `python3 tools/marc_stats.py .cache/nanet/records --source nanet --label 국회도서관 --books-only --note '일반도서 2015-2024, 20개 일반어 검색 편의표본'` → check.sh → build.py.
+- 주의: 편의표본(검색어 기반)이라 주제 편향 가능. 원본 레코드는 재배포하지 않고(.cache는 git 제외) 집계만 커밋.
+
 ## 작업 로그
 - 2026-10-31: 명세 확인, 골격 생성. KORMARC 원문 확인(2023 개정판). 데이터·엔진·UI 전부 작성, 자체테스트 10건 통과, 브라우저 동작 확인. 1차 완성(dist/MARC-Studio.html 238KB).
   - 고친 버그: 브레이커 파서 지시기호 고정폭 처리, DOM 헬퍼의 textarea value 설정, 식별기호 표 정렬(숫자 키 우선 문제).
+- 2026-11-01(9): 국회도서관 수집기·빈도 분석기·태그 사전 사용률 표시 추가(시험 표본 12건).
 - 2026-11-01(8): 실무 MARC 데이터 출처 조사(국회도서관·국립중앙도서관 건별 MARC 반출 확인, LOD·Open API는 태그 단위 아님).
 - 2026-11-01(7): KORMARC 통합서지용 전수 반영 — 원문 234개 페이지 자동 추출(kormarc-fields2.js 135개), 신규 태그 28개, 손 정의 보정 37건, r11 900 지시기호 수정.
 - 2026-11-01(6): GitHub 리포지터리 생성·푸시 (LunaticRuri/marc-studio).

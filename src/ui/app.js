@@ -267,15 +267,43 @@
   }
   const textStyleFor = (fmt) => S.settings.textStyle === 'auto' ? (fmt === 'MARC21' ? 'marcedit' : 'kormarc') : S.settings.textStyle;
 
+  /* ---------- 실무 사용률 (src/data/usage.js, tools/marc_stats.py) ---------- */
+  const usageSets = (fmt) => Object.keys(MS.USAGE || {}).map(k => MS.USAGE[k]).filter(u => u && u.format === fmt && u.n);
+  const pct = (a, b) => b ? ((100 * a / b) < 10 ? (100 * a / b).toFixed(1) : Math.round(100 * a / b)) + '%' : '-';
+  const usagePct = (fmt, tag) => { const u = usageSets(fmt)[0]; if (!u) return null; const e = u.tags[tag]; return h('span', { class: 'upct', title: u.source + ' 표본 ' + u.n + '건 중 출현률', text: e ? pct(e.recs, u.n) : '0%' }); };
+  const sortTags = (fmt, ts) => { const u = usageSets(fmt)[0]; if (S.refSort !== 'usage' || !u) return ts.sort(); return ts.sort((a, b) => (((u.tags[b] || {}).recs || 0) - ((u.tags[a] || {}).recs || 0)) || a.localeCompare(b)); };
+  function appendUsage(wrap, fmt, tag) {
+    usageSets(fmt).forEach(u => {
+      const box = h('div', { class: 'usage' });
+      box.appendChild(h('div', { class: 'sec', text: '실무 사용률 — ' + u.source + ' 표본 ' + u.n.toLocaleString() + '건 (' + u.collected + ')' }));
+      if (tag === '000' || tag === 'LDR' || tag === '008') {
+        const dist = tag === '008' ? u.f008 : u.leader; const t = h('table', { class: 'utbl' });
+        Object.keys(dist || {}).sort((a, b) => parseInt(a) - parseInt(b)).forEach(p => { const tot = Object.values(dist[p]).reduce((x, y) => x + y, 0); t.appendChild(h('tr', {}, h('td', { class: 'c', text: p }), h('td', {}, ...Object.keys(dist[p]).map(v => h('span', { class: 'uv' }, h('b', { class: 'mono', text: v.replace(/ /g, '␣') }), ' ' + pct(dist[p][v], tot)))))); });
+        box.appendChild(h('div', { class: 'small muted', text: tag === '008' ? '자리별 값 분포 (도서 외 자료유형이 섞여 있으면 의미가 다를 수 있음)' : '리더 자리별 값 분포' })); box.appendChild(t); wrap.appendChild(box); return;
+      }
+      const e = u.tags[tag];
+      if (!e) { box.appendChild(h('p', { class: 'small muted', style: 'margin:4px 0', text: '표본에 이 태그가 없습니다 (출현률 0%).' })); wrap.appendChild(box); return; }
+      box.appendChild(h('p', { class: 'small', style: 'margin:4px 0' }, h('b', { text: pct(e.recs, u.n) }), ' 의 레코드에 있음 (' + e.recs.toLocaleString() + '건, ' + e.occ.toLocaleString() + '회, 있는 레코드당 평균 ' + (e.occ / e.recs).toFixed(2) + '회)'));
+      if (e.ind) { const tot = Object.values(e.ind).reduce((x, y) => x + y, 0); box.appendChild(h('p', { class: 'small', style: 'margin:4px 0' }, '지시기호: ', ...Object.keys(e.ind).map(k => h('span', { class: 'uv' }, h('b', { class: 'mono', text: k.replace(/ /g, '#') }), ' ' + pct(e.ind[k], tot))))); }
+      if (e.sub) {
+        const t = h('table', { class: 'utbl' });
+        Object.keys(e.sub).forEach(c => { const rc = e.sub[c][0], oc = e.sub[c][1]; t.appendChild(h('tr', {}, h('td', { class: 'c mono', text: delimOf(fmt) + c }), h('td', {}, h('span', { class: 'ubar', style: 'width:' + Math.max(2, Math.round(120 * rc / e.occ)) + 'px' }), ' ' + pct(rc, e.occ) + (oc > rc ? ' (있을 때 평균 ' + (oc / rc).toFixed(1) + '개)' : '')))); });
+        box.appendChild(h('div', { class: 'small muted', style: 'margin-top:4px', text: '식별기호 사용률 (이 태그가 나온 ' + e.occ.toLocaleString() + '회 기준)' })); box.appendChild(t);
+      }
+      wrap.appendChild(box);
+    });
+  }
+
   /* ---------- 도움말 렌더 ---------- */
   function renderHelpInto(box, fmt, tag) {
     if (!box) return; box.innerHTML = ''; const d = delimOf(fmt);
     const wrap = h('div', { class: 'help' });
-    if (tag === '000' || tag === 'LDR') { wrap.appendChild(h('h3', { text: '리더 (Leader)' })); wrap.appendChild(codeTable(MS.CODES.LEADER[fmt])); box.appendChild(wrap); return; }
-    if (tag === '008') { const auth = isAuthFmt(fmt); wrap.appendChild(h('h3', { text: auth ? '008 부호화정보필드 — 전거통제용' : '008 부호화정보필드 — 도서(BK)' })); wrap.appendChild(h('p', { class: 'small muted', text: auth ? 'KORMARC 전거통제용 2023 개정판 기준. 09 레코드 종류(a 채택표목 …), 10 목록기술규칙, 11 주제명표목표, 14-16 표목사용, 32 동명이인, 33 채택표목 수준이 핵심.' : fmt === 'KORMARC' ? 'KORMARC 2023 개정판 기준. 24-25 내용형식(2자리), 26-27 한국대학부호, 28 수정레코드, 32 목록정보원, 38-39 한국정부기관부호는 MARC21과 다릅니다.' : 'MARC 21 Books 008.' })); wrap.appendChild(codeTable(auth ? MS.CODES.F008[fmt].AUTH : MS.CODES.F008[fmt].BK)); box.appendChild(wrap); return; }
+    if (tag === '000' || tag === 'LDR') { wrap.appendChild(h('h3', { text: '리더 (Leader)' })); wrap.appendChild(codeTable(MS.CODES.LEADER[fmt])); appendUsage(wrap, fmt, '000'); box.appendChild(wrap); return; }
+    if (tag === '008') { const auth = isAuthFmt(fmt); wrap.appendChild(h('h3', { text: auth ? '008 부호화정보필드 — 전거통제용' : '008 부호화정보필드 — 도서(BK)' })); wrap.appendChild(h('p', { class: 'small muted', text: auth ? 'KORMARC 전거통제용 2023 개정판 기준. 09 레코드 종류(a 채택표목 …), 10 목록기술규칙, 11 주제명표목표, 14-16 표목사용, 32 동명이인, 33 채택표목 수준이 핵심.' : fmt === 'KORMARC' ? 'KORMARC 2023 개정판 기준. 24-25 내용형식(2자리), 26-27 한국대학부호, 28 수정레코드, 32 목록정보원, 38-39 한국정부기관부호는 MARC21과 다릅니다.' : 'MARC 21 Books 008.' })); wrap.appendChild(codeTable(auth ? MS.CODES.F008[fmt].AUTH : MS.CODES.F008[fmt].BK)); appendUsage(wrap, fmt, '008'); box.appendChild(wrap); return; }
     const def = fieldDef(fmt, tag);
     if (!def) { wrap.appendChild(h('h3', { text: tag + ' — 정의되지 않은 태그' })); wrap.appendChild(h('p', { class: 'small muted', text: '내장 정의에 없는 태그입니다. 자관 로컬 필드라면 그대로 사용할 수 있습니다.' })); box.appendChild(wrap); return; }
     wrap.appendChild(h('h3', {}, h('span', { class: 'mono', text: tag + ' ' }), def.name, ' ', h('span', { class: 'badge', text: def.rep ? '반복' : '반복불가' }), ' ', (def.src || fmt === 'MARC21') ? h('span', { class: 'badge ' + (def.src === '확인' ? 'ok' : ''), title: def.src === '확인' ? (fmt === 'MARC21' ? '미국의회도서관 MARC 21 원문으로 확인한 정의' : '국립중앙도서관 KORMARC 원문으로 확인한 정의') : (fmt === 'MARC21' ? 'LC 원문 미대조(기억에 의존한 정의)' : 'MARC21 정의를 준용(KORMARC 원문 세부 미확인)'), text: def.src === '확인' ? (fmt === 'MARC21' ? 'LC 원문 확인' : '원문 확인') : (fmt === 'MARC21' ? 'LC 미대조' : 'MARC21 준용') }) : null, def.kormarcOnly ? h('span', { class: 'badge k', text: 'KORMARC 전용' }) : null, def.local ? h('span', { class: 'badge', text: '로컬' }) : null));
+    appendUsage(wrap, fmt, tag);
     if (def.obsolete) wrap.appendChild(h('p', { class: 'small', style: 'color:var(--warn)', text: '⚠ ' + def.obsolete }));
     if (def.control) { wrap.appendChild(h('p', { class: 'small muted', text: '제어필드: 지시기호와 식별기호를 사용하지 않습니다.' })); if (def.patternDesc) wrap.appendChild(h('p', { class: 'small', text: '형식: ' + def.patternDesc })); box.appendChild(wrap); return; }
     if (def.nameOnly) { wrap.appendChild(h('p', { class: 'small muted', text: '이 필드는 이름만 등록되어 있어 지시기호·식별기호 상세 검증을 하지 않습니다.' })); box.appendChild(wrap); return; }
@@ -496,13 +524,14 @@
     center.appendChild(h('div', { class: 'panel' }, h('div', { class: 'ph' }, '정의'), detail));
     const q = h('input', { class: 'txt', placeholder: '태그 또는 이름 검색', style: 'width:100%', oninput: () => renderList() });
     const fsel = h('select', { class: 'sel', onchange: (ev) => { S.refFormat = ev.target.value; if (!MS.FIELDS[S.refFormat][S.refTag] && S.refTag !== '000' && S.refTag !== '008') S.refTag = isAuthFmt(S.refFormat) ? '100' : '245'; save(); renderList(); show(S.refTag); renderRight(); } }, ...FORMATS.map(x => h('option', { value: x, selected: S.refFormat === x }, FORMAT_LABEL[x])));
+    const ssel = h('select', { class: 'sel', title: '목록 정렬', onchange: (ev) => { S.refSort = ev.target.value; save(); renderList(); } }, h('option', { value: 'tag', selected: S.refSort !== 'usage' }, '태그 순서'), h('option', { value: 'usage', selected: S.refSort === 'usage' }, '실무 사용률 순'));
     const list = h('ul', { class: 'reflist' });
-    left.appendChild(h('div', { class: 'panel' }, h('div', { style: 'padding:8px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px' }, fsel, q), list));
+    left.appendChild(h('div', { class: 'panel' }, h('div', { style: 'padding:8px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px' }, fsel, q, ssel), list));
     const show = (tag) => { S.refTag = tag; save(); renderHelpInto(detail, S.refFormat, tag); list.querySelectorAll('li').forEach(li => li.classList.toggle('active', li.dataset.tag === tag)); };
     const renderList = () => {
       list.innerHTML = ''; const F = MS.FIELDS[S.refFormat]; const qq = q.value.trim().toLowerCase();
-      const entries = [['000', '리더'], ['008', isAuthFmt(S.refFormat) ? '008 부호화정보필드(전거)' : '008 부호화정보필드(도서)']].concat(Object.keys(F).filter(t => t !== '008').sort().map(t => [t, F[t].name]));
-      entries.filter(([t, n]) => !qq || t.includes(qq) || n.toLowerCase().includes(qq)).forEach(([t, n]) => { const d = F[t]; list.appendChild(h('li', { 'data-tag': t, class: t === S.refTag ? 'active' : '', onclick: () => show(t) }, h('span', { class: 'tag', text: t }), h('span', { text: n }), d && d.kormarcOnly ? h('span', { class: 'badge k', text: 'K' }) : null)); });
+      const entries = [['000', '리더'], ['008', isAuthFmt(S.refFormat) ? '008 부호화정보필드(전거)' : '008 부호화정보필드(도서)']].concat(sortTags(S.refFormat, Object.keys(F).filter(t => t !== '008')).map(t => [t, F[t].name]));
+      entries.filter(([t, n]) => !qq || t.includes(qq) || n.toLowerCase().includes(qq)).forEach(([t, n]) => { const d = F[t]; list.appendChild(h('li', { 'data-tag': t, class: t === S.refTag ? 'active' : '', onclick: () => show(t) }, h('span', { class: 'tag', text: t }), h('span', { text: n }), d && d.kormarcOnly ? h('span', { class: 'badge k', text: 'K' }) : null, usagePct(S.refFormat, t))); });
     };
     const renderRight = () => {
       right.innerHTML = '';
@@ -520,6 +549,7 @@
       const diff = h('table', { class: 'difftbl' }, h('tr', {}, h('th', { text: '항목' }), h('th', { text: 'KORMARC' }), h('th', { text: 'MARC21' })));
       MS.DIFFS.forEach(r => diff.appendChild(h('tr', {}, h('td', { text: r.area }), h('td', {}, r.k, r.note ? h('div', { class: 'small muted', text: r.note }) : null), h('td', { text: r.m }))));
       right.appendChild(h('div', { class: 'panel' }, h('div', { class: 'ph' }, 'KORMARC ↔ MARC21 주요 차이'), h('div', { class: 'pb' }, diff)));
+      usageSets(S.refFormat).forEach(u => right.appendChild(h('div', { class: 'panel' }, h('div', { class: 'ph' }, '실무 사용률 표본'), h('div', { class: 'pb small' }, h('p', { style: 'margin:0' }, u.source + ' 소장자료 ' + u.n.toLocaleString() + '건 (' + u.collected + ' 수집). ' + (u.note ? u.note + ' ' : '') + '태그 사전 각 항목과 목록의 백분율은 이 표본에서 그 태그가 나타난 레코드 비율입니다. 빈도는 참고용이며 규정상 필수 여부와는 다릅니다.')))));
       right.appendChild(h('div', { class: 'panel' }, h('div', { class: 'ph' }, '출처'), h('div', { class: 'pb small' }, h('p', { style: 'margin:0 0 6px' }, 'KORMARC: 국립중앙도서관 「한국문헌자동화목록형식—통합서지용」 2023 개정판(KS X 6006-0) 공개 원문 ', h('a', { href: 'https://librarian.nl.go.kr/kormarc/KSX6006-0/', target: '_blank', text: 'librarian.nl.go.kr/kormarc' })), h('p', { style: 'margin:0' }, 'MARC 21: Library of Congress, MARC 21 Format for Bibliographic Data ', h('a', { href: 'https://www.loc.gov/marc/bibliographic/', target: '_blank', text: 'loc.gov/marc/bibliographic' })), h('p', { class: 'muted', style: 'margin:6px 0 0', text: '「원문 확인」 표시가 없는 KORMARC 필드는 MARC21 정의를 준용한 것이므로 세부 식별기호는 원문으로 확인하세요.' }))));
     };
     renderList(); show(S.refTag || (isAuthFmt(S.refFormat) ? '100' : '245')); renderRight();
