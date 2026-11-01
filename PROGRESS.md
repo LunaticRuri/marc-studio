@@ -82,9 +82,25 @@
 ## 저장소
 - GitHub: https://github.com/LunaticRuri/marc-studio (public, main). GitHub Pages: https://lunaticruri.github.io/marc-studio/ (main 루트, 푸시하면 1~2분 내 반영). 수정 후 `git add -A && git commit && git push`. 인증은 gh CLI(키체인).
 
+## 실무 MARC 데이터 출처 조사 (2026-11-01) — 태그 빈도 분석용
+목적: 국립중앙도서관·국회도서관 실제 레코드에서 태그·지시기호·식별기호 사용률을 세어 학습 우선순위에 반영.
+
+| 출처 | 원본 KORMARC 여부 | 대량 확보 방법 | 확인 결과 |
+|---|---|---|---|
+| 국회도서관 소장자료 상세 (dl.nanet.go.kr) | **예**. `POST /search/viewMARC.do` (controlNo) → 태그·지시기호·값 JSON, `GET /search/dowloadMARC.do?controlNo=` → MARCXML(slim) | 공공데이터포털 「국회도서관_자료검색 서비스」(apis.data.go.kr/9720000/searchservice, 공공누리 1유형, XML, 100건/페이지, dbname=일반도서·학위논문 등, option=발행년도 범위)로 제어번호 목록 확보 → 건별 MARC 조회 | 로그인 없이 동작 확인(MONO12024000084295). robots.txt는 /search/ 허용. 자료검색 Open API 자체는 MARC 미제공(항목명-값 쌍). |
+| 국립중앙도서관 소장자료 상세 (nl.go.kr) | **예**. `GET /NL/search/marc_view.do?viewKey=…&viewType=AH1` (HTML 표), `GET /NL/marcDownload.do?downData=viewKey,AH1` → **ISO 2709(.marc)**, `&type=marc21` → MARC21 변환본. `downData`를 반복하면 여러 건 한 파일 | 국립중앙도서관 Open API 「소장자료 검색」(회원가입+인증키+담당자 승인, XML/JSON, 검색당 500건 제한, 상세검색 f1/v1)으로 id·control_no 확보 → marcDownload | 로그인 없이 동작 확인(KMO201422660, 2건 동시 다운로드 성공). Open API 응답의 id가 viewKey와 같은지는 키 발급 후 확인 필요. |
+| 국립중앙도서관 Open API(소장자료·국가자료종합목록·국가서지) | 아니오 | — | 출력은 title_info·author_info·pub_info·isbn·call_no 등 요약 필드뿐. |
+| 국가서지 LOD (lod.nl.go.kr) | 아니오(RDF 변환본) | 데이터셋 전체 덤프 공개: 오프라인자료 715만 건 TTL 2.1GB 등, 전거(개인명 186만·단체명 16만·주제명 26만), 2026-10-08 갱신. `/home/dataset/datasetdownload.do?fileName=…` (샘플 파일은 즉시, 전체는 설문 후) | 샘플 확인: dcterms/bibframe/nlon 속성으로 매핑되어 태그·지시기호 정보는 사라짐. 008·지시기호 분석 불가, 전거 통계용으로는 유용. |
+| 공공데이터포털 「국립중앙도서관_서지 정보 제공 서비스」(BookInformationService_v2) | 미확인 | 인증키 필요 | LOD 기반이라 MARC 태그 단위는 아닐 가능성 높음. 문서에 응답 필드 미기재. |
+| KOLIS-NET MARC 데이터 제공 | 예(원본) | 기관 신청(팩스·이메일), **개인 제외** | 개인 이용 불가. |
+| RISS/KERIS 종합목록 | 미확인 | — | 검색 페이지가 500 오류/빈 화면으로 응답해 확인 못 함. unicat.riss.kr 예시 14건은 이미 연습문제에 반영. |
+
+권장 경로: ① 국회도서관(인증키 1개로 목록 → 건별 MARCXML, 가장 간단) ② 국립중앙도서관(인증키 승인 후 목록 → ISO 2709 일괄). 둘 다 "건별 조회"라 표본은 수천 건 규모로 설계(자료유형·발행년 층화), 호출 간격을 두고 수집. 이용 조건은 공공누리 1유형(국회) / 국립중앙도서관 Open API 약관 확인.
+
 ## 작업 로그
 - 2026-10-31: 명세 확인, 골격 생성. KORMARC 원문 확인(2023 개정판). 데이터·엔진·UI 전부 작성, 자체테스트 10건 통과, 브라우저 동작 확인. 1차 완성(dist/MARC-Studio.html 238KB).
   - 고친 버그: 브레이커 파서 지시기호 고정폭 처리, DOM 헬퍼의 textarea value 설정, 식별기호 표 정렬(숫자 키 우선 문제).
+- 2026-11-01(8): 실무 MARC 데이터 출처 조사(국회도서관·국립중앙도서관 건별 MARC 반출 확인, LOD·Open API는 태그 단위 아님).
 - 2026-11-01(7): KORMARC 통합서지용 전수 반영 — 원문 234개 페이지 자동 추출(kormarc-fields2.js 135개), 신규 태그 28개, 손 정의 보정 37건, r11 900 지시기호 수정.
 - 2026-11-01(6): GitHub 리포지터리 생성·푸시 (LunaticRuri/marc-studio).
 - 2026-11-01(5): KORMARC 전거통제용 추가(형식·검증·기술형식·연습 11문제).
