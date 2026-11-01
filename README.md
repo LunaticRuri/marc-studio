@@ -23,7 +23,8 @@ KORMARC(통합서지용·전거통제용)·MARC21 레코드를 **입력·검증*
 
 ## 개발
 ```
-src/data/   codes.js(코드표) marc21.js kormarc.js kormarc-auth.js(전거) exercises.js exercises-auth.js
+src/data/   codes.js(코드표) marc21.js kormarc.js kormarc-fields2.js(원문 자동 추출) kormarc-auth.js(전거) exercises.js exercises-auth.js
+tools/      gen_kormarc_fields.py(원문→kormarc-fields2.js) add_riss_exercises.py
 src/core/   model.js(모델·파서·ISO2709) validate.js(검증) grade.js(채점)
 src/ui/     styles.css app.js
 index.html  개발용 진입점(src 파일 직접 로드)
