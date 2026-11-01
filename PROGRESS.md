@@ -75,9 +75,13 @@
 - 기술 형식 보기(전거): 채택표목·속성·보라/도보라·연관저록·주기 요약.
 - 교과서(노션 "[자료조직_목록 05-3] KORMARC 전거통제용") 참고: 2021 제3문(2) 유형 = b01(에밀 아자르).
 
+## 저장소
+- GitHub: https://github.com/LunaticRuri/marc-studio (public, main). 수정 후 `git add -A && git commit && git push`. 인증은 gh CLI(키체인).
+
 ## 작업 로그
 - 2026-10-31: 명세 확인, 골격 생성. KORMARC 원문 확인(2023 개정판). 데이터·엔진·UI 전부 작성, 자체테스트 10건 통과, 브라우저 동작 확인. 1차 완성(dist/MARC-Studio.html 238KB).
   - 고친 버그: 브레이커 파서 지시기호 고정폭 처리, DOM 헬퍼의 textarea value 설정, 식별기호 표 정렬(숫자 키 우선 문제).
+- 2026-11-01(6): GitHub 리포지터리 생성·푸시 (LunaticRuri/marc-studio).
 - 2026-11-01(5): KORMARC 전거통제용 추가(형식·검증·기술형식·연습 11문제).
 - 2026-11-01(4): 남은 KORMARC 12개·MARC21 34개 원문 대조 완료.
 - 2026-11-01(3): MARC21 핵심 필드 LC 원문 대조·수정.
