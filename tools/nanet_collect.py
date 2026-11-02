@@ -23,10 +23,25 @@ UA = 'MARC-Studio sample collector (educational, low-rate; https://github.com/Lu
 DEFAULT_TERMS = ['연구', '한국', '사회', '역사', '문학', '경제', '교육', '과학', '문화', '정치', '법', '예술', '환경', '기술', '건강', '철학', '종교', '지역', '세계', '이야기']
 
 
-def http_get(url, timeout=30):
+_FAILS = 0
+def http_get(url, timeout=60):
+    """차단·과부하 보호: 403/429/5xx·네트워크 오류는 30s→60s→120s→300s 후 재시도, 연속 실패 5회면 중단(재실행 시 이어짐)."""
+    global _FAILS
     req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': '*/*'})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read()
+    for i, wait in enumerate([30, 60, 120, 300, None]):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                _FAILS = 0
+                return r.read()
+        except Exception as e:
+            code = getattr(e, 'code', None)
+            if code and 400 <= code < 500 and code not in (403, 408, 429):
+                raise
+            _FAILS += 1
+            if _FAILS >= 5:
+                sys.exit('!! 연속 실패 %d회(%s) — 차단/점검 가능성. 잠시 후 같은 명령으로 재실행하면 이어서 진행됩니다.' % (_FAILS, e))
+            if wait is None: raise
+            print('  ~ 재시도 %d (%s) %ds 대기' % (i + 1, e, wait), file=sys.stderr); time.sleep(wait)
 
 
 def enc_key(key):

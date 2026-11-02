@@ -270,8 +270,8 @@
   /* ---------- 실무 사용률 (src/data/usage.js, tools/marc_stats.py) ---------- */
   const usageSets = (fmt) => Object.keys(MS.USAGE || {}).map(k => MS.USAGE[k]).filter(u => u && u.format === fmt && u.n);
   const pct = (a, b) => b ? ((100 * a / b) < 10 ? (100 * a / b).toFixed(1) : Math.round(100 * a / b)) + '%' : '-';
-  const usagePct = (fmt, tag) => { const u = usageSets(fmt)[0]; if (!u) return null; const e = u.tags[tag]; return h('span', { class: 'upct', title: u.source + ' 표본 ' + u.n + '건 중 출현률', text: e ? pct(e.recs, u.n) : '0%' }); };
-  const sortTags = (fmt, ts) => { const u = usageSets(fmt)[0]; if (S.refSort !== 'usage' || !u) return ts.sort(); return ts.sort((a, b) => (((u.tags[b] || {}).recs || 0) - ((u.tags[a] || {}).recs || 0)) || a.localeCompare(b)); };
+  const usagePct = (fmt, tag) => { const us = usageSets(fmt); if (!us.length) return null; const box = h('span', { class: 'upct' }); us.forEach((u, i) => { const e = u.tags[tag]; if (i) box.appendChild(document.createTextNode(' · ')); box.appendChild(h('span', { title: u.source + ' 표본 ' + u.n.toLocaleString() + '건 중 출현률', text: e ? pct(e.recs, u.n) : '0%' })); }); return box; };
+  const sortTags = (fmt, ts) => { const us = usageSets(fmt); if (S.refSort !== 'usage' || !us.length) return ts.sort(); const score = (t) => us.reduce((acc, u) => acc + ((u.tags[t] || {}).recs || 0) / u.n, 0) / us.length; return ts.sort((a, b) => (score(b) - score(a)) || a.localeCompare(b)); };
   function appendUsage(wrap, fmt, tag) {
     usageSets(fmt).forEach(u => {
       const box = h('div', { class: 'usage' });
@@ -524,7 +524,7 @@
     center.appendChild(h('div', { class: 'panel' }, h('div', { class: 'ph' }, '정의'), detail));
     const q = h('input', { class: 'txt', placeholder: '태그 또는 이름 검색', style: 'width:100%', oninput: () => renderList() });
     const fsel = h('select', { class: 'sel', onchange: (ev) => { S.refFormat = ev.target.value; if (!MS.FIELDS[S.refFormat][S.refTag] && S.refTag !== '000' && S.refTag !== '008') S.refTag = isAuthFmt(S.refFormat) ? '100' : '245'; save(); renderList(); show(S.refTag); renderRight(); } }, ...FORMATS.map(x => h('option', { value: x, selected: S.refFormat === x }, FORMAT_LABEL[x])));
-    const ssel = h('select', { class: 'sel', title: '목록 정렬', onchange: (ev) => { S.refSort = ev.target.value; save(); renderList(); } }, h('option', { value: 'tag', selected: S.refSort !== 'usage' }, '태그 순서'), h('option', { value: 'usage', selected: S.refSort === 'usage' }, '실무 사용률 순'));
+    const ssel = h('select', { class: 'sel', title: '목록 정렬', onchange: (ev) => { S.refSort = ev.target.value; save(); renderList(); } }, h('option', { value: 'tag', selected: S.refSort !== 'usage' }, '태그 순서'), h('option', { value: 'usage', selected: S.refSort === 'usage' }, '실무 사용률 순' + (usageSets(S.refFormat).length > 1 ? ' (출처 평균)' : '')));
     const list = h('ul', { class: 'reflist' });
     left.appendChild(h('div', { class: 'panel' }, h('div', { style: 'padding:8px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px' }, fsel, q, ssel), list));
     const show = (tag) => { S.refTag = tag; save(); renderHelpInto(detail, S.refFormat, tag); list.querySelectorAll('li').forEach(li => li.classList.toggle('active', li.dataset.tag === tag)); };
