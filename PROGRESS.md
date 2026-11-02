@@ -111,6 +111,8 @@
   - 고친 버그: 브레이커 파서 지시기호 고정폭 처리, DOM 헬퍼의 textarea value 설정, 식별기호 표 정렬(숫자 키 우선 문제).
 - 2026-11-01(9): 국회도서관 수집기·빈도 분석기·태그 사전 사용률 표시 추가(시험 표본 12건).
 - 2026-11-02(10): 국회도서관 본 수집 1,500건(일반도서 2015~2024) → usage.js 갱신. 수집기 `<recode>` 파싱 보정.
+- 2026-11-02(11): 국립중앙도서관 수집기 `tools/nlk_collect.py`(키 불필요: 통합검색 HTML→viewKey, marcDownload.do 묶음 내려받기; `--lod` 모드는 국가서지 LOD 덤프 `lod_data/`(6.3GB, git 제외)에서 `tools/lod_index.py`로 만든 `.cache/lod_index.tsv` 표본을 제어번호 검색으로 해석). 국중도 1,500건 예비 집계 반영. 두 출처 백분율 나란히 표시.
+  - **진행 중(사용자 PC 종료로 중단, 재개 필요)**: ① 국중도 LOD 표본 1만 건 — viewKey 해석 약 4,000/10,000 완료(`.cache/nlk/lod_map.tsv`). 재개: `python3 -u tools/nlk_collect.py --lod .cache/lod_index.tsv --sample 10000 --lod-years 2015-2024 --target 11500 --batch 50 --delay 3` ② 국회도서관 1만 건 추가 — 약 7,850/10,000 내려받음. 재개: `DATA_GO_KR_KEY=… python3 -u tools/nanet_collect.py --db 일반도서 --years 2015-2024 --pages 3 --target 11500 --delay 2.0` (ids.txt 이미 있으면 API 단계는 다시 돌지만 10분 내). 끝나면 `marc_stats.py … --source nlk|nanet --books-only` → check.sh → build.py → PROGRESS 갱신 → 커밋.
 - 2026-11-01(8): 실무 MARC 데이터 출처 조사(국회도서관·국립중앙도서관 건별 MARC 반출 확인, LOD·Open API는 태그 단위 아님).
 - 2026-11-01(7): KORMARC 통합서지용 전수 반영 — 원문 234개 페이지 자동 추출(kormarc-fields2.js 135개), 신규 태그 28개, 손 정의 보정 37건, r11 900 지시기호 수정.
 - 2026-11-01(6): GitHub 리포지터리 생성·푸시 (LunaticRuri/marc-studio).
