@@ -48,7 +48,7 @@ def search_ids(key, db, term, y1, y2, pages, lines=100, delay=0.5):
             root = ET.fromstring(raw)
         except ET.ParseError:
             print('  ! XML 파싱 실패:', raw[:200], file=sys.stderr); break
-        recs = root.findall('.//record')
+        recs = root.findall('.//record') + root.findall('.//recode')  # 실제 응답은 <recode>(원문 오타)
         for rec in recs:
             items = {i.findtext('name'): (i.findtext('value') or '').strip() for i in rec.findall('item')}
             cn = items.get('제어번호')
