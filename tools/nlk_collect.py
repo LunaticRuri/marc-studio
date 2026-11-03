@@ -126,9 +126,13 @@ def main():
                 p = l.rstrip('\n').split('\t')
                 if len(p) >= 2: mp[p[0]] = p[1]
         todo = [(cn, yr) for cn, yr in sample if cn not in mp]
-        print('viewKey 해석: 표본 %d건 중 이미 %d건, 이번에 %d건 (간격 %.1f초)' % (len(sample), len(mp), len(todo), a.delay))
+        n_done = len(open(done_path, encoding='utf-8').read().split()) if os.path.exists(done_path) else 0
+        resolved = sum(1 for v in mp.values() if v != '-')
+        need = max(0, a.target - n_done)  # 내려받기 목표까지 필요한 viewKey 수만큼만 해석
+        print('viewKey 해석: 표본 %d건 중 이미 %d건(해석됨 %d), 필요 %d건, 이번에 최대 %d건 (간격 %.1f초)' % (len(sample), len(mp), resolved, need, len(todo), a.delay))
         miss = 0
         for i, (cn, yr) in enumerate(todo, 1):
+            if resolved >= need: print('  필요한 만큼 해석됨(%d건) — 중단' % resolved); break
             try:
                 key = resolve_lod(cn, a.delay)
             except SystemExit:
@@ -136,7 +140,8 @@ def main():
             except Exception as e:
                 print('  ! 해석 실패', cn, e, file=sys.stderr); time.sleep(a.delay); continue
             mp[cn] = key or '-'
-            if not key: miss += 1
+            if key: resolved += 1
+            else: miss += 1
             with open(map_path, 'a', encoding='utf-8') as f: f.write('%s\t%s\t%s\n' % (cn, key or '-', yr))
             if i % 50 == 0: print('  …%d/%d (미해석 %d)' % (i, len(todo), miss))
             time.sleep(a.delay + random.random() * a.delay * 0.5)
